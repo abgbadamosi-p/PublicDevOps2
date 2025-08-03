@@ -1,62 +1,81 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "3.15.00"
-    }
-  }
-  backend "azurerm" {
-    resource_group_name = var.bkstrgrg
-    storage_account_name = var.bkstrg
-    container_name = var.bkcontainer
-    key = var.bkstrgkey
-  }
-}
+# Copyright (c) HashiCorp, Inc.
+# SPDX-License-Identifier: MPL-2.0
 
 provider "azurerm" {
   features {}
 }
 
-resource "azurerm_resource_group" "vnet_rg" {
-  name     = var.resourcegroup_name
+resource "azurerm_resource_group" "rg" {
+  name     = "${var.prefix}-resources"
   location = var.location
-  tags     = var.tags
 }
 
-resource "azurerm_virtual_network" "vnet" {
-  name                = var.vnet_name
-  address_space       = var.vnet_address_space
-  location            = azurerm_resource_group.vnet_rg.location
-  resource_group_name = azurerm_resource_group.vnet_rg.name
-  tags                = var.tags
-}
-
-resource "azurerm_subnet" "subnet" {
-  for_each = var.subnets
-  resource_group_name  = var.resourcegroup_name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  name                 = each.value["name"]
-  address_prefixes     = each.value["address_prefixes"]
-}
-
-resource "azurerm_public_ip" "bastion_pubip" {
-  name                = "${var.bastionhost_name}PubIP"
-  location            = azurerm_resource_group.vnet_rg.location
-  resource_group_name = azurerm_resource_group.vnet_rg.name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-  tags                = var.tags
-}
-
-resource "azurerm_bastion_host" "bastion" {
-  name                = var.bastionhost_name
-  location            = azurerm_resource_group.vnet_rg.location
-  resource_group_name = azurerm_resource_group.vnet_rg.name
-  tags                = var.tags
-
-  ip_configuration {
-    name                 = "bastion_config"
-    subnet_id            = azurerm_subnet.subnet["bastion_subnet"].id
-    public_ip_address_id = azurerm_public_ip.bastion_pubip.id
+resource "azurerm_api_management" "apim_service" {
+  name                = "${var.prefix}-apim-service"
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  publisher_name      = "Example Publisher"
+  publisher_email     = "publisher@example.com"
+  sku_name            = "Developer_1"
+  tags = {
+    Environment = "Example"
   }
+  policy {
+    xml_content = <<XML
+    <policies>
+      <inbound />
+      <backend />
+      <outbound />
+      <on-error />
+    </policies>
+XML
+  }
+}
+
+resource "azurerm_api_management_api" "api" {
+  name                = "${var.prefix}-api"
+  resource_group_name = azurerm_resource_group.rg.name
+  api_management_name = azurerm_api_management.apim_service.name
+  revision            = "1"
+  display_name        = "${var.prefix}-api"
+  path                = "example"
+  protocols           = ["https", "http"]
+  description         = "An example API"
+  import {
+    content_format = var.open_api_spec_content_format
+    content_value  = var.open_api_spec_content_value
+  }
+}
+
+resource "azurerm_api_management_product" "product" {
+  product_id            = "${var.prefix}-product"
+  resource_group_name   = azurerm_resource_group.rg.name
+  api_management_name   = azurerm_api_management.apim_service.name
+  display_name          = "${var.prefix}-product"
+  subscription_required = true
+  approval_required     = false
+  published             = true
+  description           = "An example Product"
+}
+
+resource "azurerm_api_management_group" "group" {
+  name                = "${var.prefix}-group"
+  resource_group_name = azurerm_resource_group.rg.name
+  api_management_name = azurerm_api_management.apim_service.name
+  display_name        = "${var.prefix}-group"
+  description         = "An example group"
+}
+
+resource "azurerm_api_management_product_api" "product_api" {
+  resource_group_name = azurerm_resource_group.rg.name
+  api_management_name = azurerm_api_management.apim_service.name
+  product_id          = azurerm_api_management_product.product.product_id
+  api_name            = azurerm_api_management_api.api.name
+}
+
+resource "azurerm_api_management_product_group" "product_group" {
+  resource_group_name = azurerm_resource_group.rg.name
+  api_management_name = azurerm_api_management.apim_service.name
+  product_id          = azurerm_api_management_product.product.product_id
+  group_name          = azurerm_api_management_group.group.name
 }
