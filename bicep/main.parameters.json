@@ -1,43 +1,43 @@
+
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "tags": {
-      "value": {
-        "Environment": "Lab",
-        "Department": "IT"
-      }
+    "location": {
+      "value": "eastus"
+    },
+    "apimName": {
+      "value": "apim-demo-instance"
+    },
+    "publisherName": {
+      "value": "Contoso API Team"
+    },
+    "publisherEmail": {
+      "value": "apim-team@contoso.com"
+    },
+    "skuName": {
+      "value": "Developer"
+    },
+    "skuCapacity": {
+      "value": 1
     },
     "vnetName": {
-      "value": "TestVNet7"
+      "value": "apim-demo-vnet"
     },
-    "addressPrefixes": {
-      "value": [
-        "10.10.0.0/16",
-        "10.11.0.0/16"
-      ]
+    "vnetAddressPrefix": {
+      "value": "10.10.0.0/16"
     },
-    "ipSubnets": {
-      "value": [
-        {
-          "subnetPrefix": "10.10.0.0/24",
-          "name": "Subnet1"
-        },
-        {
-          "subnetPrefix": "10.10.1.0/24",
-          "name": "Subnet2"
-        },
-        {
-          "subnetPrefix": "10.10.250.0/24",
-          "name": "AzureBastionSubnet"
-        }
-      ]
+    "subnetName": {
+      "value": "apim-subnet"
     },
-    "bastionPubIpName": {
-      "value": "BastionIp"
+    "subnetPrefix": {
+      "value": "10.10.1.0/24"
     },
-    "bastionName": {
-      "value": "BastionHost"
+    "keyVaultName": {
+      "value": "apim-demo-kv"
+    },
+    "keyVaultSecretName": {
+      "value": "apim-secret"
     }
   }
 }
